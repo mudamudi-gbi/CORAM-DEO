@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coram Deo Quiz - Professional Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Montserrat', sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; line-height: 1.6; background-color: #f4f7f6; text-align: center; color: #333; }
+        .hidden { display: none; }
+        
+        #quiz-container, #intro-container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+        
+        #notification {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #1e3799; color: white; padding: 15px 25px; border-radius: 50px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 9999; display: none;
+            font-weight: bold; min-width: 300px;
+        }
+
+        #timer { font-size: 26px; font-weight: bold; color: #e74c3c; margin-bottom: 25px; background: #fff5f5; display: inline-block; padding: 10px 25px; border-radius: 50px; border: 2px solid #feb2b2; }
+        
+        button { cursor: pointer; padding: 15px 30px; background: #28a745; color: white; border: none; border-radius: 12px; font-weight: bold; transition: 0.3s; font-size: 16px; margin-top: 15px; }
+        button:hover { background: #218838; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3); }
+        
+        input[type="text"] { width: 100%; padding: 15px; margin-bottom: 25px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 16px; text-align: center; box-sizing: border-box; }
+
+        .option-label { display: block; background: #f8fafc; margin: 12px 0; padding: 18px; border-radius: 12px; cursor: pointer; border: 2px solid #edf2f7; text-align: left; transition: 0.2s; }
+        .option-label:hover { border-color: #28a745; background: #f0fff4; }
+        input[type="radio"] { margin-right: 15px; transform: scale(1.3); accent-color: #28a745; }
+
+        /* SERTIFIKAT */
+        #certificate {
+            background: #fffdf5; padding: 60px; border: 2px solid #28a745; outline: 12px double #28a745; outline-offset: -25px;
+            position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.1); margin-top: 30px;
+            background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px); background-size: 30px 30px;
+        }
+
+        #certificate h1 { font-family: 'Crimson Text', serif; font-size: 16px; letter-spacing: 6px; color: #718096; text-transform: uppercase; margin-bottom: 40px; }
+        #certificate h2#cert-name { font-family: 'Crimson Text', serif; font-size: 50px; color: #1e3799; margin: 10px 0; font-style: italic; font-weight: 700; }
+        .cert-line { width: 70%; height: 1px; background: #cbd5e0; margin: 25px auto; }
+        .cert-score-wrap { background: #1e3799; color: white; display: inline-block; padding: 10px 40px; border-radius: 50px; margin: 20px 0; }
+        .cert-score { font-size: 45px; font-weight: 900; }
+        .cert-footer { display: flex; justify-content: space-around; margin-top: 60px; }
+        .signature { border-top: 1.5px solid #4a5568; padding-top: 10px; width: 180px; font-size: 14px; color: #4a5568; font-weight: bold; }
+
+        @media print {
+            button, #admin-panel, #timer, #intro-container, #notification { display: none !important; }
+            body { background: white; padding: 0; }
+            #certificate { box-shadow: none; outline: 12px double #28a745; margin-top: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="notification">
+        <span id="notif-text">⏳ Mengirim skor ke panitia...</span>
+    </div>
+
+    <div id="intro-container">
+        <h2 style="color: #28a745; font-size: 28px;">Forum Quiz Coram Deo🧠💡</h2>
+        <p>Uji pengetahuan Alkitabmu. Waktu: <b>15 detik</b> per soal.</p>
+        <input type="text" id="nama-input" placeholder="Masukkan Nama Lengkap Anda..." required>
+        <button onclick="startQuiz()">Mulai Kuis</button>
+    </div>
+
+    <div id="quiz-container" class="hidden">
+        <div id="timer">15</div>
+        <div id="question-content"></div>
+        <button type="button" id="controlBtn" onclick="processAnswer()">Selanjutnya</button>
+    </div>
+
+    <div id="certificate-screen" class="hidden">
+        <div id="certificate">
+            <h1>Achievement Quiz Coram Deo📖✝️</h1>
+            <p>Dengan bangga diberikan kepada🏆:</p>
+            <h2 id="cert-name">Nama Peserta</h2>
+            <div class="cert-line"></div>
+            <p>Telah menyelesaikan tantangan iman dalam</p>
+            <p style="font-weight: 700; color: #28a745; letter-spacing: 2px; font-size: 18px;">CORAM DEO BIBLE QUIZ</p>
+            
+            <div class="cert-score-wrap">
+                <span style="font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Nilai Akhir</span>
+                <div class="cert-score" id="cert-score">0</div>
+            </div>
+
+            <p style="font-style: italic; color: #4a5568; margin: 30px 50px; font-family: 'Crimson Text', serif; font-size: 18px;">
+                "Percayalah kepada TUHAN dengan segenap hatimu, dan janganlah bersandar kepada pengertianmu sendiri."<br>
+                <strong>— Amsal 3:5</strong>
+            </p>
+
+            <div class="cert-footer">
+                <div class="signature">
+                    <p>Panitia Coram Deo</p>
+                    <p>Erwin 🗿</p>
+                </div>
+                <div class="signature">
+                    <p>Tanggal: <span id="current-date"></span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button onclick="window.print()" style="background: #1e3799;">Simpan / Cetak Sertifikat</button>
+            <p style="font-size: 12px; color: #718096; margin-top: 10px;">*Hadiah minta sama admin grup🗿</p>
+        </div>
+
+        <div id="admin-panel" style="margin-top: 50px;">
+            <button onclick="resetQuiz()" style="background: #e2e8f0; color: #4a5568; font-size: 11px; width: auto;">Reset Aplikasi</button>
+        </div>
+    </div>
+
+    <script>
+        const databaseSoal = [
+            { q: "Siapakah manusia pertama yang diciptakan Tuhan?", a: "Adam", options: ["Abraham", "Adam", "Musa"], score: 20 },
+            { q: "Ada berapa jumlah Kitab di dalam Alkitab?", a: "66", options: ["77", "66", "55"], score: 20 },
+            { q: "Di kota manakah Tuhan Yesus dilahirkan?", a: "Betlehem", options: ["Betlehem", "Yerusalem", "Nazaret"], score: 20 },
+            { q: "Apa hukum yang terutama menurut Yesus?", a: "Kasih", options: ["Kasih", "Persembahan", "Puasa"], score: 20 },
+            { q: "Siapakah murid yang mengkhianati Yesus?", a: "Yudas Iskariot", options: ["Petrus", "Yohanes", "Yudas Iskariot"], score: 20 }
+        ];
+
+        let soalAcak = [];
+        let currentStep = 0;
+        let timeLeft = 15;
+        let timerInterval;
+        let totalScore = 0;
+        let userNama = "";
+
+        window.onload = () => {
+            if (localStorage.getItem("kuisSelesai") === "true") {
+                showFinalScreen(localStorage.getItem("lastScore"), localStorage.getItem("lastName"));
+            }
+        };
+
+        function startQuiz() {
+            userNama = document.getElementById("nama-input").value.trim();
+            if (!userNama) return alert("Silakan tulis nama Anda!");
+            
+            soalAcak = [...databaseSoal].sort(() => Math.random() - 0.5);
+            document.getElementById("intro-container").classList.add("hidden");
+            document.getElementById("quiz-container").classList.remove("hidden");
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const soal = soalAcak[currentStep];
+            const opsiAcak = [...soal.options].sort(() => Math.random() - 0.5);
+            
+            let html = `<p style="color: #28a745; font-weight: bold;">PERTANYAAN ${currentStep + 1} DARI ${soalAcak.length}</p>
+                        <p style="font-size: 22px; font-weight: 700; margin-bottom: 20px;">${soal.q}</p>`;
+            
+            opsiAcak.forEach(opt => {
+                html += `<label class="option-label">
+                            <input type="radio" name="quiz_opt" value="${opt === soal.a ? soal.score : 0}"> ${opt}
+                         </label>`;
+            });
+            
+            document.getElementById("question-content").innerHTML = html;
+            document.getElementById("controlBtn").innerText = (currentStep === soalAcak.length - 1) ? "Lihat Hasil" : "Selanjutnya";
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 15;
+            document.getElementById("timer").innerText = timeLeft;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    processAnswer(true);
+                }
+            }, 1000);
+        }
+
+        function processAnswer(isAuto = false) {
+            const options = document.getElementsByName("quiz_opt");
+            let selectedValue = 0;
+            let answered = false;
+
+            options.forEach(opt => {
+                if (opt.checked) { answered = true; selectedValue = parseInt(opt.value); }
+            });
+
+            if (!answered && !isAuto) return alert("Pilih satu jawaban😑!");
+
+            totalScore += selectedValue;
+
+            if (currentStep < soalAcak.length - 1) {
+                currentStep++;
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        async function finishQuiz() {
+            clearInterval(timerInterval);
+            
+            // Tampilkan notifikasi loading
+            const notif = document.getElementById("notification");
+            notif.style.display = "block";
+
+            // Simpan ke localStorage
+            localStorage.setItem("kuisSelesai", "true");
+            localStorage.setItem("lastScore", totalScore);
+            localStorage.setItem("lastName", userNama);
+
+            // Kirim data menggunakan Fetch API (AJAX)
+            const formData = new FormData();
+            formData.append("Nama", userNama);
+            formData.append("Skor", totalScore);
+            formData.append("_subject", "Hasil Kuis Coram Deo - " + userNama);
+            formData.append("_captcha", "false");
+
+            try {
+                await fetch("https://formsubmit.co/ajax/rezazogy@gmail.com", {
+                    method: "POST",
+                    body: formData
+                });
+                document.getElementById("notif-text").innerText = "✅ Skor berhasil dikirim!";
+                setTimeout(() => notif.style.display = "none", 3000);
+            } catch (error) {
+                document.getElementById("notif-text").innerText = "❌ Gagal mengirim, tapi sertifikat tetap tersedia.";
+                console.error(error);
+            }
+
+            showFinalScreen(totalScore, userNama);
+        }
+
+        function showFinalScreen(score, name) {
+            document.getElementById("intro-container").classList.add("hidden");
+            document.getElementById("quiz-container").classList.add("hidden");
+            document.getElementById("certificate-screen").classList.remove("hidden");
+            document.getElementById("cert-name").innerText = name;
+            document.getElementById("cert-score").innerText = score;
+            
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', options);
+        }
+
+        function resetQuiz() {
+            if (confirm("Hapus data kuis?")) {
+                const pass = prompt("Password Admin:");
+                if (pass === "admingbi") {
+                    localStorage.clear();
+                    location.reload();
+                } else { alert("Salah!"); }
+            }
+        }
+    </script>
+</body>
+</html>
